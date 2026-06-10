@@ -46,10 +46,15 @@ def extract(file_path):
     # Vi du:
     #   with open(file_path, 'r') as f:
     #       data = json.load(f)
-    #   return data
+    #   return data    
+    try:
+        with open(file_path, 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        print(f"Error: {file_path} not found.")
+        return []
     pass
-
-
+    
 def validate(data):
     """
     Task 2: Kiem tra chat luong du lieu.
@@ -66,15 +71,30 @@ def validate(data):
     Returns:
         list: Danh sach cac records hop le
     """
+    # TODO: Lap qua data, kiem tra tung record
+    # Giu lai record hop le, dem record lo
     valid_records = []
+    dropped_records = []
     error_count = 0
 
-    # TODO: Lap qua data, kiem tra tung record
-    # Giu lai record hop le, dem record loi
+    for record in data:
+        price = record.get('price', 0)
+        category = record.get('category')
 
-    print(f"Validation complete. Valid: {len(valid_records)}, Errors: {error_count}")
+        if price <= 0:
+            dropped_records.append({"id": record.get('id'), "reason": "Price not appropriate"})
+            continue
+        if not category:
+            dropped_records.append({"id": record.get('id'), "reason": "Category is empty"})
+            continue
+            
+        valid_records.append(record)
+
+    print(f"Validation complete. Valid: {len(valid_records)}, Dropped: {len(dropped_records)}, Errors: {error_count}")
+    if dropped_records:
+        print(f"Dropped records: {dropped_records}")
     return valid_records
-
+    pass
 
 def transform(data):
     """
@@ -95,6 +115,14 @@ def transform(data):
         pd.DataFrame: DataFrame da duoc transform
     """
     # TODO: Tao DataFrame va ap dung transformations
+    df = pd.DataFrame(data)
+    # Discount
+    df['discounted_price'] = df['price'] * 0.9
+    # Title Case
+    df['category'] = df['category'].str.title()
+    # Metadata
+    df['processed_at'] = datetime.datetime.now().isoformat()
+    return df
     pass
 
 
@@ -106,8 +134,9 @@ def load(df, output_path):
        - df.to_csv(output_path, index=False)
     """
     # TODO: Luu DataFrame ra CSV
-    print(f"Data saved to {output_path}")
-
+    df.to_csv(output_path, index=False)
+    print(f"Successfull saved {len(df)} records to {output_path}")
+    pass
 
 # ============================================================
 # MAIN PIPELINE
